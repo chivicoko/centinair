@@ -1,6 +1,6 @@
 "use client"
 
-import React, { Dispatch, SetStateAction, useEffect, useState } from 'react'
+import React, { Dispatch, SetStateAction, useEffect, useState } from 'react';
 import ButtonOne from './button/ButtonOne';
 import { ErrorOutline, Restore } from '@mui/icons-material';
 import ButtonNeutral from './button/ButtonNeutral';
@@ -19,10 +19,12 @@ interface OtpProps {
     handleModalToggle: () => void,
     cancelEmailVerification: () => void,
     emailAddress: string,
-    setIsVerified: Dispatch<SetStateAction<boolean>>,
+    isVerified?: boolean,
+    setIsVerified?: Dispatch<SetStateAction<boolean>>,
 }
 
-const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emailAddress, setIsVerified}: OtpProps) => {
+// const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emailAddress}: OtpProps) => {
+const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emailAddress}: OtpProps) => {
     const [otpTime, setOTPTime] = useState(60);
     const [otpCode, setOTPCode] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -84,20 +86,22 @@ const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emai
         setIsLoading(true);
         try {
             if (pathName === '/register') {
-                const res = await verifyEmail(emailAddress, data.otp_code);
-            
-                if (res.success) {
+                const {success, message} = await verifyEmail(emailAddress, data.otp_code);
+                // console.log(success, message);
+
+                if (success) {
                     setIsLoading(false);
-                    showToast(`${res.message}`);
-                    setIsVerified(true);
+                    showToast(`${message}`);
+                    // setIsVerified(true);
                     handleModalToggle();
+                    router.push('/login');
                 }
             }
             
             if (pathName === '/forgot-password') {
-                const res = await verifyPasswordReset(emailAddress, data.otp_code);
+                const {success, message} = await verifyPasswordReset(emailAddress, data.otp_code);
                 
-                if (res.success) {
+                if (success) {
                     setIsLoading(false);
                     // setIsVerified(true);
                     handleModalToggle();
@@ -105,7 +109,7 @@ const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emai
                 }
                     
                 setTimeout(() => {
-                    showToast(`${res.message}`);
+                    showToast(`${message}`);
                 }, 500);
             };
         } catch (error) {
@@ -144,14 +148,14 @@ const OTPConfirmModal = ({data, handleModalToggle, cancelEmailVerification, emai
                             <p className='flex-1 flex items-center justify-between gap-3'>
                                 {otpTime === 0 ?
                                 <>
-                                    <span>OTP code has expired.</span>
+                                    <span>Didn&apos;t get OTP?</span>
                                     <button onClick={resendOTP} className='cursor-pointer text-textGrayDarker underline flex items-center gap-1 text-sm font-semibold'>
                                         <Restore style={{fontSize: '16px'}} />
-                                        Resend OTP
+                                        Resend
                                     </button>
                                 </>
                                 : 
-                                <span>Confirmation code expires in <strong>{otpTime === 60 ? '01:00' : otpTime}</strong></span>}
+                                <span>_<strong>{otpTime === 60 ? '01:00' : otpTime}</strong></span>}
                                 {/* <span>Confirmation code expires in <strong>{otpTime === 60 ? '01:00' : <CountDownTimer/>}</strong></span>} */}
                             </p>
                         </div>

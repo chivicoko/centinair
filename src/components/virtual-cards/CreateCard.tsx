@@ -1,17 +1,27 @@
 'use client';
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import ButtonOne from '../button/ButtonOne';
 import InputField from '../inputs/InputField';
 import SelectInputField from '../inputs/InputSelectField';
 import { CreditCard } from '@mui/icons-material';
 import { Toaster } from 'react-hot-toast';
 import { showToast } from '../HotToast';
+import LoadingSpinner from '../LoadingSpinner';
 
 const CreateCard = () => {
   const [loading, setLoading] = useState(false);
+  const [btnIsDisabled, setBtnIsDisabled] = useState(false);
   const [isChecked, setIsChecked] = useState('');
   
+  useEffect(() => {
+    if (isChecked !== 'on' || loading) {
+      setBtnIsDisabled(true);
+    } else {
+      setBtnIsDisabled(false);
+    }
+  }, [isChecked, loading]);
+
   const onFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -20,30 +30,32 @@ const CreateCard = () => {
       setLoading(false);
     }, 2000);
   };
-  console.log(isChecked);
 
   return (
     <form onSubmit={onFormSubmit} className='py-3 divide-y'>
         <Toaster position="top-center" reverseOrder={false} />
         <div className='py-6 px-5'>
-          <div className="pb-4">
-            <h2 className='text-[22px] font-semibold'>Create Virtual Card</h2>
-            <p>Create an international virtual card for online transactions</p>
+
+          <div className="w-full flex items-center justify-between gap-3 pb-6">
+            <div className="">
+              <h2 className='text-[22px] font-semibold'>Create Virtual Card</h2>
+              <p>Create an international virtual card for online transactions</p>
+            </div>
+
+            <ButtonOne
+              type='submit'
+              classes='py-2 px-8 font-semibold'
+              disabled={btnIsDisabled}
+              icon1={loading ? <LoadingSpinner color='text-white' /> : ''}
+              btnText1={loading ? 'Processing...' : 'Create Virtual Card'}
+            />
           </div>
 
-          <div className='p-5 bg-neutral-100 rounded-radius-12'>
-            <div className="w-full flex items-center justify-between gap-3 pb-3">
+          <div className='w-full sm:w-96 mx-auto p-5 bg-neutral-100 rounded-radius-12'>
               <div className='flex items-center gap-2'>
                 <CreditCard className='text-primary' />
                 <h2 className='text-[16px] font-semibold'>Card Details</h2>
               </div>
-                
-              <ButtonOne
-                type='submit'
-                classes='py-2 px-8 font-semibold'
-                btnText1={loading ? 'Processing...' : 'Create Virtual Card'}
-              />
-            </div>
             
             <div className="w-full space-y-3 md:space-y-5">
                 <div className="w-full">
@@ -79,14 +91,6 @@ const CreateCard = () => {
             </div>
           </div>
         </div>
-
-        {/* <div className="flex items-center justify-end pt-6 pb-1 px-5">
-          <ButtonOne
-            type='submit'
-            classes='py-2 px-8 font-semibold'
-            btnText1={loading ? 'Processing...' : 'Create Virtual Card'}
-          />
-        </div> */}
     </form>
   )
 }

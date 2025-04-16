@@ -47,7 +47,10 @@ const BankTransactionTable = ({transactionHistory}: TransactionHistoryTableProps
   const indexOfLastProduct = currentPage * transactionPerPage;
   const indexOfFirstProduct = indexOfLastProduct - transactionPerPage;
   const currentRecentTransactions = transactionHistory?.slice(indexOfFirstProduct, indexOfLastProduct);
-  const totalPages = Math.ceil(transactionHistory ? transactionHistory.length : 0 / transactionPerPage);
+  const totalPages = transactionHistory && transactionPerPage > 0
+    ? Math.ceil(transactionHistory.length / transactionPerPage)
+    : 0;
+
   
   const paginate = (pageNumber: number) => setCurrentPage(pageNumber);
   
@@ -76,14 +79,13 @@ const BankTransactionTable = ({transactionHistory}: TransactionHistoryTableProps
                   {currentRecentTransactions?.map(item => (
                     <tr
                       key={item.id}
-                      className={`my-2 ${item.status === 'success' ? 'bg-green-50' : item.status === 'cancelled' ? 'bg-orange-50' : item.status === 'failed' ? 'bg-yellow-50' : 'bg-gray-50'}`}
+                      className={`my-2 ${item.status === 'success' ? 'bg-green-50' : item.status === 'pending' ? 'bg-yellow-50' : 'bg-red-50'}`}
                     >
                       <td className={`relative 'py-[11px] text-[12px] px-2 text-center whitespace-nowrap w-2`}>
                         <span className='flex items-center gap-2'>
                           <div className="relative size-7 rounded-full border">
                             <Image
-                              src={item.icon === '' ? item.icon : '/images/default_avatar.png'}
-                              // src={`${item.icon}` || '/images/default_avatar.png'}
+                              src={item.icon === '' ? item.icon : '/images/imagePlaceholder.jpeg'}
                               alt="user avatar"
                               fill
                               className="object-cover rounded-full"
@@ -93,12 +95,12 @@ const BankTransactionTable = ({transactionHistory}: TransactionHistoryTableProps
                           {item.description}
                         </span>
                       </td>
-                      <td className={`relative ${+item.amount < 1000  ? 'text-orange-700' : 'text-green-700'} py-[11px] text-[12px] px-2 text-center whitespace-nowrap w-2`}>
-                        {+item.amount < 2500  ? '-' : '+'} ₦{item.amount}
+                      <td className={`relative ${item.type === 'deposit' ? 'text-green-700' : 'text-orange-700'} py-[11px] text-[12px] px-2 text-center whitespace-nowrap w-2`}>
+                        {item.type === 'deposit' ? '+' : '-'} ₦{item.amount}
                       </td>
                       <td className={`relative py-[11px] text-[12px] px-2 text-center whitespace-nowrap w-2 capitalize`}>
-                        <span className={`w-fit flex items-center gap-1 px-1 mx-auto ${item.status === 'success' ? 'text-green-700 border-green-300 bg-green-100' : item.status === 'cancelled' ? 'text-yellow-700 border-yellow-300 bg-yellow-100' : item.status === 'failed' ? 'text-red-700 border-red-300 bg-red-100' : 'text-gray-700 border-gray-300 bg-gray-100'} border rounded-full`}>
-                          <div className={`size-1 rounded-full ${item.status === 'success' ? 'bg-green-700' : item.status === 'cancelled' ? 'bg-yellow-700' : item.status === 'failed' ? 'bg-red-700' : 'bg-gray-700'} `}></div>
+                        <span className={`w-fit flex items-center gap-1 px-1 mx-auto ${item.status === 'success' ? 'text-green-700 border-green-300 bg-green-100'  : item.status === 'pending' ? 'text-yellow-700 border-yellow-300 bg-yellow-100'  : 'text-red-700 border-red-300 bg-red-100'} border rounded-full`}>
+                          <div className={`size-1 rounded-full ${item.status === 'success' ? 'bg-green-700' : item.status === 'pending' ? 'bg-yellow-700' : 'bg-red-700'} `}></div>
                           {item.status}
                         </span>
                       </td>

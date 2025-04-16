@@ -7,8 +7,9 @@ import ButtonNeutral from '../button/ButtonNeutral';
 import { useRouter } from 'next/navigation';
 import Tabs from './Tabs';
 import { Logout } from '@mui/icons-material';
-import { useGeneralData } from '@/context/GeneralDataContext';
-import { useEffect, useState } from 'react';
+import LoadingSpinner from '../LoadingSpinner';
+import { useUserData } from '@/hooks/useUserData';
+import { useGeneralData } from '@/stores/useGeneralData';
 
 interface SidebarProps {
     show?: string;
@@ -16,21 +17,22 @@ interface SidebarProps {
 }
   
 const Sidebar: React.FC<SidebarProps> = ({ show = 'hidden', closeSidebar = () => {} }) => {
-    const [firstName, setFirstName] = useState('');
-    const [email, setEmail] = useState('');
-    const {user, contextLoading, dropLoggedInUserInfo} = useGeneralData();
-    
+    const dropLoggedInUserInfo = useGeneralData((state) => state.dropLoggedInUserInfo);
+
+    const {
+    userDashboardData,
+    isPending,
+    hasError,
+    } = useUserData();
+
     const router = useRouter();
 
-    useEffect(() => {
-        if (user !== null) {
-            setFirstName(user.name)
-            setEmail(user.email)
-        }
-    }, [user?.name, user?.email, user]);
+    const { user } = userDashboardData || {};
+    
+    if (hasError) return <div>Error loading user data</div>;
 
     const logout = () => {
-        router.push('/login');
+        router.push('/');
         dropLoggedInUserInfo();
         sessionStorage.removeItem('accessToken');
     }
@@ -68,22 +70,18 @@ const Sidebar: React.FC<SidebarProps> = ({ show = 'hidden', closeSidebar = () =>
                             <div className="w-full pl-2 pt-2 pb-5 flex items-center justify-between gap-3 border-t">
                                 <div className="relative size-9 rounded-full">
                                     <Image
-                                        src="/images/3.jpeg"
+                                        src="/images/default_avatar.png"
                                         alt="User's profile image"
                                         fill
                                         className="object-contain rounded-full"
                                         sizes="(max-width: 768px) 100vw, 50vw"
                                     />
                                 </div>
-                                {contextLoading ? 
-                                // <LoadingSpinner/>
-                                'Loading...'
-                                 : 
+                                {isPending ? <LoadingSpinner /> : 
                                 <div className='flex flex-col'>
-                                    <p className='capitalize text-[12px] text-textGray font-semibold'>{firstName}</p>
-                                    <p className='text-[10px] text-textGray'>{email}</p>
-                                </div>
-                                }
+                                    <p className='capitalize text-[12px] text-textGray font-semibold'>{user.name}</p>
+                                    <p className='text-[10px] text-textGray'>{user.email}</p>
+                                </div>}
                                 <ButtonNeutral
                                     onClick={logout}
                                     classes={`focus:ring-transparent bg-transparent border-transparent hover:bg-[#F6F6F6] border hover:border-customGray p-1 rounded-radius-4 transition-all duration-300 ease-in-out`}

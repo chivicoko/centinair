@@ -50,17 +50,17 @@ export interface UserDataProps {
   first_name: string;
   last_name: string;
   email: string;
-  phone_number: string;
-  address: {
-    country: string;
-    state: string;
-    city: string;
-    home_address: string;
-  };
-  gender: string;
-  date_of_birth: string;
+  // phone_number: string;
+  // address: {
+  //   country: string;
+  //   state: string;
+  //   city: string;
+  //   home_address: string;
+  // };
+  // gender: string;
+  // date_of_birth: string;
   password: string;
-  confirm_password: string;
+  // confirm_password: string;
 }
 
 export interface LocalStorateUserDataProps {
@@ -136,7 +136,7 @@ export interface TransactionHistoryProps {
   amount: number,
   type: string,
   description: string,
-  status: boolean,
+  status: string,
   date: string,
   sender: string,
   icon: string,
@@ -179,4 +179,60 @@ export interface UserKYCProps {
   status: string,
   id_type: string,
   id_number: string,
+}
+
+export interface AirtimeProviderProps {
+  maxAmount: string,
+  minAmount: string,
+  provider: string,
+  providerLogoUrl: string
+}
+
+export interface AirtimeProviderResponse {
+  data: AirtimeProviderProps[];
+  success: boolean;
+  message: string;
+}
+
+export interface AirtimeTransactionDataProps {
+  provider: string,
+  phoneNumber: string,
+  amount: string,
+  date: string,
+  reference: string,
+  status: string,
+}
+
+export interface InternetDataProviderProps {
+  id: number,
+  ip_id: number,
+  name: string,
+}
+
+export interface InternetDataPlanProps {
+  id: number,
+  data_type_id: number,
+  api_cent: string,
+  amount: string,
+  name: string,
+}
+
+export interface InternetDataTransactionDataProps {
+  transactionProvider: string,
+  phoneNumber: string,
+  amount: string,
+  date: string,
+  reference: string,
+  status: string,
+}
+
+export interface ProviderResponse {
+  success: boolean;
+  message: string;
+  data: {
+    success: boolean;
+    message: string;
+    code: string,
+    data: InternetDataProviderProps[]
+  }
 }

@@ -1,65 +1,63 @@
 'use client';
 
 import { Edit, HomeOutlined, PersonOutlined, Save } from '@mui/icons-material';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import InputField from '../inputs/InputField';
 import ButtonOne from '../button/ButtonOne';
 import { showToast } from '../HotToast';
-import { Toaster } from 'react-hot-toast';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { profileSchema, ProfileType } from '@/features/dashboard/validations';
 import { updateProfile } from '@/features/dashboard/actions';
-import { useRouter } from 'next/navigation';
-import { useGeneralData } from '@/context/GeneralDataContext';
 import ButtonNeutral from '../button/ButtonNeutral';
+import LoadingSpinner from '../LoadingSpinner';
+import { useGeneralData } from '@/stores/useGeneralData';
+import { useUserData } from '@/hooks/useUserData';
+import StatusHandler from '../shared/StatusHandler';
+import { useAuthToken } from '@/hooks/useAuthToken';
 
 interface ProfileProps {
     data?: ProfileType;
 }
 
-const Profile: React.FC<ProfileProps> = ({ data }) => {
-    const [loading, setLoading] = useState(false);
+const Profile: React.FC<ProfileProps> = () => {
     const [inputDisabled, setInputDisabled] = useState(true);
     const [inputMode, setInputMode] = useState<string>('editable');
-    const {userProfile, userAddress, contextLoading} = useGeneralData();
-    // const [updatedUserInfo, setUpdatedUserInfo] = useState<
-    // {
-    //     first_name: '',
-    //     last_name: '',
-    //     home_address: '',
-    //     city: '',
-    //     state: '',
-    //     country: '',
-    //     postal_code: '',
-    //     house_number: '',
-    // } | null>(null);
-    
-    const {loggedInUser} = useGeneralData();
 
-    const router = useRouter();
+    const loggedInUser = useGeneralData((state) => state.loggedInUser);
+    const token = useAuthToken();
+
+    const {userProfileData, isPending, hasError, refetchProfile, refetchDashboard} = useUserData();
+    const { profile_data, addres } = userProfileData || {};
+
+    const {
+        register,
+        handleSubmit,
+        formState: { isSubmitting, errors },
+        reset
+    } = useForm<ProfileType>({resolver: zodResolver(profileSchema),});
+
+    useEffect(() => {
+        if ((profile_data && addres) || inputMode !== 'editable') {
+            reset({
+                first_name: profile_data?.first_name || '',
+                last_name: profile_data?.last_name || '',
+                home_address: addres?.house_address || '',
+                house_number: addres?.house_no || '',
+                city: addres?.city || '',
+                state: addres?.state || '',
+                country: addres?.country || '',
+                postal_code: addres?.postal_code || '',
+            });
+        }
+    }, [inputMode, profile_data, addres, reset]);
 
     const handleEditForm = () => {
         setInputMode('');
         setInputDisabled(false);
     }
     
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-        } = useForm<ProfileType>({
-        resolver: zodResolver(profileSchema),
-        defaultValues: data,
-        });
-    
-        const onFormSubmit = handleSubmit(async (data) => {
-        console.log(data);
-            
-        const token = sessionStorage.getItem("accessToken");
-        if (!token) return router.push('/login');
-     
-        setLoading(true);
+    const onFormSubmit = handleSubmit(async (data) => {
         const UserData = {
             first_name: data.first_name,
             last_name: data.last_name,
@@ -71,47 +69,44 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
             house_number: data.house_number,
         }
 
-        try {
-            const res = await updateProfile(token, UserData);
-            // console.log(res);
-            if (res.success) {
-                const { data } = res;
-                setLoading(false);
+        if (token) {
+            try {
+                const res = await updateProfile(token, UserData);
+                // console.log(res);
+                if (res.success) {
+                    const { data } = res;
+                    setTimeout(() => {
+                        showToast(`${res.message}` || 'Profile updated successfully');
+                    }, 500);
+                    
+                    localStorage.setItem('loggedInUserInfo', JSON.stringify({
+                        ...loggedInUser,
+                        name: `${data.first_name} ${data.last_name}`,
+                    }));
+                }
+    
+                await refetchProfile();
+                await refetchDashboard();
+                setInputMode('editable');
+                setInputDisabled(true);
+            } catch (error) {
                 setTimeout(() => {
-                    showToast(`${res.message}` || 'Profile updated successfully');
+                    showToast(`Error: ${(error as Error).message || 'An unexpected error occurred'}`, 'error');
                 }, 500);
-                
-                localStorage.setItem('loggedInUserInfo', JSON.stringify({
-                    ...loggedInUser,
-                    name: `${data.first_name} ${data.last_name}`,
-                }));
-                // setUpdatedUserInfo({
-                //     first_name: data.first_name,
-                //     last_name: data.last_name,
-                //     home_address: data.address.home_address,
-                //     city: data.address.city,
-                //     state: data.address.state,
-                //     country: data.address.country,
-                //     postal_code: data.address.postal_code,
-                //     house_number: data.address.house_number,
-                // })
             }
-            router.refresh();
-            setInputMode('editable');
-            setInputDisabled(true);
-        } catch (error) {
-            setLoading(false);
-            setTimeout(() => {
-                showToast(`Error: ${(error as Error).message || 'An unexpected error occurred'}`, 'error');
-            }, 500);
         }
     });
+
+    if (isPending || !!hasError) return (
+      <StatusHandler
+        isLoading={isPending}
+        isError={!!hasError}
+        errorMessage="Failed to load providers. Please try again."
+      />
+    );
     
   return (
-    <>
-    {contextLoading ? <p className='py-4 text-2xl text-center'>Loading...</p> : 
     <form onSubmit={onFormSubmit} className='py-3 divide-y'>
-        <Toaster position="top-center" reverseOrder={false} />
         <div className='py-6 px-5'>
             <div className="w-full flex items-center justify-between gap-3 pb-5">
                 <div className='flex items-center gap-2'>
@@ -120,18 +115,20 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                 </div>
                 
                 <div className="flex items-center gap-2">
+                    {inputMode === 'editable' ?
                     <ButtonNeutral
                         onClick={handleEditForm}
                         classes='py-2 px-8 font-semibold space-x-2 border hover:border-primary hover:text-primary rounded-radius-12 w-full sm:w-fit transition-all duration-300 ease-in-out'
                         btnText1='Edit Profile'
                         icon1={<Edit style={{fontSize: '17px'}} />}
-                    />
+                    /> : 
                     <ButtonOne
                         type='submit'
                         classes='py-2 px-8 font-semibold w-full sm:w-fit'
-                        btnText1={loading ? 'Saving...' : 'Save Profile'}
-                        icon1={<Save style={{fontSize: '17px'}} />}
-                    />
+                        btnText1={isSubmitting ? 'Saving...' : 'Save Profile'}
+                        disabled={isSubmitting}
+                        icon1={isSubmitting ? <LoadingSpinner color='text-white' /> : <Save style={{fontSize: '17px'}} />}
+                    />}
                 </div>
             </div>
             
@@ -144,8 +141,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             error={errors.first_name}
                             disabled={inputDisabled}
                             mode={inputMode}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userProfile?.first_name || 'Enter your first name'}
+                            classes={`w-full`}
+                            placeholderText='Enter your first name'
                         />
                     </div>
                     <div className="w-full md:w-1/2">
@@ -155,8 +152,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="Last Name"
                             error={errors.last_name}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userProfile?.last_name || 'Enter your last name'}
+                            classes={`w-full`}
+                            placeholderText='Enter your last name'
                         />
                     </div>
                 </div>
@@ -178,8 +175,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="Home Address"
                             error={errors.home_address}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.house_address || 'Enter your home address'}
+                            classes={`w-full`}
+                            placeholderText='Enter your home address'
                         />
                     </div>
                     <div className="w-full md:w-1/2">
@@ -189,8 +186,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="House Number"
                             error={errors.house_number}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.house_no || 'Enter your house number'}
+                            classes={`w-full`}
+                            placeholderText='Enter your house number'
                         />
                     </div>
                 </div>
@@ -202,8 +199,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="City"
                             error={errors.city}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.city || 'Enter your city'}
+                            classes={`w-full`}
+                            placeholderText='Enter your city'
                         />
                     </div>
                     <div className="w-full md:w-1/2">
@@ -213,8 +210,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="State/Province"
                             error={errors.state}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.state || 'Enter your state'}
+                            classes={`w-full`}
+                            placeholderText='Enter your state'
                         />
                     </div>
                 </div>
@@ -226,8 +223,8 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="Postal Code"
                             error={errors.postal_code}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.postal_code || 'Enter your postal code'}
+                            classes={`w-full`}
+                            placeholderText='Enter your postal code'
                         />
                     </div>
                     <div className="w-full md:w-1/2">
@@ -237,25 +234,14 @@ const Profile: React.FC<ProfileProps> = ({ data }) => {
                             disabled={inputDisabled}
                             label="Country"
                             error={errors.country}
-                            classes={`${inputMode === 'editable' ? 'placeholder:text-neutral-800 placeholder:text-base' : ''} w-full`}
-                            placeholderText={userAddress?.country || 'Enter your country'}
+                            classes={`w-full`}
+                            placeholderText='Enter your country'
                         />
                     </div>
                 </div>
             </div>
         </div>
-
-        {/* <div className="flex items-center justify-end gap-3 pt-6 pb-1 px-5">
-            <ButtonOne
-                type='submit'
-                classes='py-2 px-8 font-semibold w-full sm:w-fit'
-                btnText1={loading ? 'Saving...' : 'Save Profile'}
-                icon1={<Save style={{fontSize: '17px'}} />}
-            />
-        </div> */}
     </form>
-    }
-    </>
   )
 }
 
