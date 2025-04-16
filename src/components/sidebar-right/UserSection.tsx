@@ -12,10 +12,8 @@ const UserSection = () => {
     hasError,
     } = useUserData();
 
-    if (hasError) return <div>Error loading user data</div>;
-
     const { user } = userDashboardData || {};
-    
+
   return (
     <div>
         <div className="relative mb-16">
@@ -43,6 +41,7 @@ const UserSection = () => {
 
         <div className='px-4 mb-6'>
             {isPending ? <LoadingSpinner/> :
+            hasError ? <em className='text-sm'>Error loading user data</em> : 
             <>
                 <h2 className='font-semibold'>{user.name}</h2>
                 <p className='text-textGray text-sm'>{user.email}</p>
