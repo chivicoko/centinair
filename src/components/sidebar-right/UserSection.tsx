@@ -1,15 +1,10 @@
 'use client';
 
-import { useGeneralData } from '@/context/GeneralDataContext';
 import Image from 'next/image';
-import React, { useEffect, useState } from 'react'
 import LoadingSpinner from '../LoadingSpinner';
 import { useUserData } from '@/hooks/useUserData';
 
 const UserSection = () => {
-    const [firstName, setFirstName] = useState('');
-    const [email, setEmail] = useState('');
-    // const {user, contextLoading} = useGeneralData();
 
   const {
     userDashboardData,
